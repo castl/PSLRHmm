@@ -46,7 +46,7 @@ namespace pslrhmm {
 	}
 
 
-	double HMM::calcSequenceLikihoodLog(const Sequence& seq) const {
+	double HMM::calcSequenceLikelihoodLog(const Sequence& seq) const {
 		const size_t num_states = states.size();
 		vector<double> alpha_old(num_states);
 		vector<double> alpha    (num_states);

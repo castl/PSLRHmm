@@ -29,11 +29,11 @@ BOOST_AUTO_TEST_CASE( generate_train1 ) {
 		hmm1.generateSequence(r, s1, 100);
 		hmm2.generateSequence(r, s2, 100);
 
-		double ls1l1 = hmm1.calcSequenceLikihoodLog(s1);
-		double ls1l2 = hmm2.calcSequenceLikihoodLog(s1);
+		double ls1l1 = hmm1.calcSequenceLikelihoodLog(s1);
+		double ls1l2 = hmm2.calcSequenceLikelihoodLog(s1);
 
-		double ls2l1 = hmm1.calcSequenceLikihoodLog(s2);
-		double ls2l2 = hmm2.calcSequenceLikihoodLog(s2);
+		double ls2l1 = hmm1.calcSequenceLikelihoodLog(s2);
+		double ls2l2 = hmm2.calcSequenceLikelihoodLog(s2);
 
 		ts1l1 += ls1l1;
 		ts1l2 += ls1l2;
