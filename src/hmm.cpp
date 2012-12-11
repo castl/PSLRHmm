@@ -44,4 +44,39 @@ namespace pslrhmm {
 	const State* HMM::generateInitialState(Random& r) const {
 		return init_prob.select(r);
 	}
+
+
+	double HMM::calcSequenceLikihoodLog(const Sequence& seq) const {
+		const size_t num_states = states.size();
+		vector<double> alpha_old(num_states);
+		vector<double> alpha    (num_states);
+
+		// Initialization
+		const Emission* e = seq[0];
+		for (size_t i=0; i<num_states; i++) {
+			const State* s = states[i];
+			alpha[i] = Pi(s)*B(s, e);
+		}
+
+		for (size_t oi=1; oi<seq.size(); oi++) {
+			e = seq[oi];
+			alpha_old.swap(alpha);
+
+			for (size_t i=0; i<num_states; i++) {
+				const State* s = states[i];
+
+				double t = 0.0;
+				for (size_t j=0; j<num_states; j++) {
+					t += alpha_old[j] * A(j, s);
+				}
+				alpha[i] = t * B(s, e);
+			}
+		}
+
+		double sum = 0.0;
+		for (size_t i=0; i<num_states; i++) {
+			sum += alpha[i];
+		}
+		return log(sum);	
+	}
 }

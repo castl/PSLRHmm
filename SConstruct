@@ -7,8 +7,8 @@ env = Environment(
 	CXXFLAGS = ['-O0', '-msse4', '-std=c++11', '-Wall', '-g'],
 	LIBS=['boost_thread-mt', 'boost_program_options-mt'])
 
-# hmmlib = env.Library('psrlhmm', Glob("src/*.cpp"))
-# env.Append(LIBS=[hmmlib])
+hmmlib = env.Library('psrlhmm', Glob("src/*.cpp"))
+env.Append(LIBS=[hmmlib])
 
 env.Append(LIBS=['boost_unit_test_framework-mt'])
 hmmtest = env.Program('hmmtest', Glob("test/*.cpp"))

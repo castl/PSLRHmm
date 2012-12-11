@@ -34,13 +34,20 @@ namespace pslrhmm {
 		HMM& owner;
 
 		SparseVector<const Emission*>  emissions_probs;
-		SparseVector<State*> 		   transition_probs;
+		SparseVector<const State*> 	   transition_probs;
 
 		State(HMM& hmm) : owner(hmm) { }
 
 	public:
-		const Emission* generateEmission() const;
-		const State*    generateState()    const;
+		template<typename Random>
+		const Emission* generateEmission(Random& r) const {
+			return emissions_probs.select(r);
+		}
+
+		template<typename Random>
+		const State*    generateState(Random& r)    const {
+			return transition_probs.select(r);
+		}
 	};
 
 	class HMM {
@@ -48,6 +55,37 @@ namespace pslrhmm {
 
 		std::vector<State*>  states;
 		SparseVector<State*> init_prob;
+
+		/****
+			Aliases to make matrix-like things with math names
+		****/
+
+		double A(const State* s, const State* t) const {
+			return s->transition_probs.get(t);	
+		}
+		double A(const State* i, size_t j) const {
+			return A(i, states[j]);
+		}
+		double A(size_t i, const State* j) const {
+			return A(states[i], j);
+		}
+		double A(size_t i, size_t j) const {
+			return A(states[i], states[j]);
+		}
+
+		double B(const State* s, const Emission* e) const {
+			return s->emissions_probs.get(e);	
+		}
+		double B(size_t s, const Emission* e) const {
+			return B(states[s], e);
+		}
+
+		double Pi(const State* s) const {
+			return init_prob.get((State*)s);
+		}
+		double Pi(size_t s) const {
+			return init_prob.get((State*)states[s]);
+		}
 
 	public:
 		typedef std::vector<const Emission*> Sequence;
@@ -59,8 +97,9 @@ namespace pslrhmm {
 		void train(size_t states, std::vector<Sequence> sequences);
 
 		const State* generateInitialState(Random& r) const;
-		void generateSequence(Random& r, Sequence&, size_t) const;
-		double calcSequenceLikihoodLog(Sequence) const;
+		void generateSequence(Random& r, Sequence&, size_t length) const;
+		double calcSequenceLikihoodLog(const Sequence&) const;
+
 
 		State& operator[](size_t i) {
 			assert(i < states.size());
