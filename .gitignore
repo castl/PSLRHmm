@@ -1,5 +1,8 @@
 hmmtest
 
+# scons artifacts
+.sconsign.dblite
+
 # Compiled Object files
 *.slo
 *.lo
