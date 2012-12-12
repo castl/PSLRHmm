@@ -131,6 +131,12 @@ namespace pslrhmm {
 			return r;
 		}
 
+		LogDouble operator/(LogDouble d) const {
+			LogDouble r;
+			r.l = this->l - d.l;
+			return r;
+		}
+
 		double exp() const {
 			if (std::isnan(this->l))
 				return 0.0;
@@ -175,6 +181,25 @@ namespace pslrhmm {
 			sum = sum + alpha[i];
 		}
 		return sum.l;	
+	}
+
+	template<typename E>
+	double HMM<E>::calcSequenceLikelihoodLog(const vector<Sequence>& seqs) const {
+		LogDouble sum;
+		#pragma omp parallel for \
+			default(none) shared(seqs, sum)
+		for (size_t i=0; i<seqs.size(); i++) {
+			const Sequence& s = seqs[i];
+			LogDouble d;
+			d.l = calcSequenceLikelihoodLog(s);
+
+			#pragma omp critical (acc_sum)
+			{
+				sum = sum + d;
+			}
+		}
+		LogDouble avg = sum / seqs.size();
+		return avg.log();
 	}
 
 	template<typename E>

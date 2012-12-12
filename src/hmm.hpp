@@ -69,7 +69,7 @@ namespace pslrhmm {
 			return init_prob.get((State*)s);
 		}
 		double Pi(size_t s) const {
-			return init_prob.get((State*)states[s]);
+			return init_prob.get(states[s]);
 		}
 
 	public:
@@ -88,6 +88,11 @@ namespace pslrhmm {
 		void generateSequence(Random& r, Sequence&, size_t length) const;
 		double calcSequenceLikelihoodLog(const Sequence&) const;
 		double calcSequenceLikelihood(const Sequence& s) const {
+			return std::exp(calcSequenceLikelihoodLog(s));
+		}
+
+		double calcSequenceLikelihoodLog(const std::vector<Sequence>&) const;
+		double calcSequenceLikelihood(const std::vector<Sequence>& s) const {
 			return std::exp(calcSequenceLikelihoodLog(s));
 		}
 
