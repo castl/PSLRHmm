@@ -8,7 +8,7 @@ using namespace std;
 
 namespace pslrhmm {
 	void HMM::initRandom(Random& r, size_t states, std::vector<Emission*> alphabet) {
-		boost::random::uniform_01<> u;
+		boost::uniform_01<> u;
 
 		this->states.clear();
 		this->init_prob.clear();
@@ -106,9 +106,9 @@ namespace pslrhmm {
 		LogDouble operator+(LogDouble y) const {
 			LogDouble x = *this;
 			LogDouble r;
-			if (isnan(x.l))
+			if (std::isnan(x.l))
 				return y;
-			else if (isnan(y.l))
+			else if (std::isnan(y.l))
 				return x;
 			else if (x.l > y.l) {
 				r.l = x.l + std::log(1 + std::exp(y.l - x.l));
@@ -132,7 +132,7 @@ namespace pslrhmm {
 		}
 
 		double exp() const {
-			if (isnan(this->l))
+			if (std::isnan(this->l))
 				return 0.0;
 			return std::exp(this->l);
 		}

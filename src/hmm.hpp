@@ -90,7 +90,7 @@ namespace pslrhmm {
 
 	public:
 		typedef std::vector<const Emission*> Sequence;
-		typedef boost::random::mt19937 Random;
+		typedef boost::mt19937 Random;
 
 		HMM() { }
 

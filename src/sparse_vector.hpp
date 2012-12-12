@@ -32,7 +32,7 @@ namespace pslrhmm {
 		// Select an item at random based on the this vector's discrete distribution
 		template<typename Random>
 		K select(Random& r) const {
-			boost::random::uniform_01<> u;
+			boost::uniform_01<> u;
 			double v = u(r);
 			BOOST_FOREACH(auto p, vec) {
 				v -= p.second;
