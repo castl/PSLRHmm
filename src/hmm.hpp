@@ -110,4 +110,6 @@ namespace pslrhmm {
 	};
 }
 
+#include "hmm_implementation.hpp"
+
 #endif // __pslrhmm_hpp__

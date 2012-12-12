@@ -317,6 +317,4 @@ namespace pslrhmm {
 			si->emissions_probs.normalize();
 		}
 	}
-
-	template class HMM<uint64_t>;
 }
