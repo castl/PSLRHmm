@@ -21,7 +21,10 @@ namespace pslrhmm {
 			size_t start, end;
 
 			linear_slice(Matrix& m, size_t start, size_t end) :
-				m(m), start(start), end(end) { }
+				m(m), start(start), end(end) {
+					assert(start <= m.vec.size());
+					assert(end <= m.vec.size());
+				 }
 
 		public:
 			K sum() {
@@ -52,19 +55,23 @@ namespace pslrhmm {
 		}
 
 		linear_slice xSlice(size_t x) {
-			return linear_slice(*this, x*X, x*X + Y);
+			return linear_slice(*this, x*Y, x*Y + Y);
 		}
 
 		K& operator()(size_t x, size_t y) {
 			assert(x < X);
 			assert(y < Y);
-			return vec[x*X + y];
+			size_t idx = x*Y + y;
+			assert(idx < vec.size());
+			return vec[idx];
 		}
 
 		const K& operator()(size_t x, size_t y) const {
 			assert(x < X);
 			assert(y < Y);
-			return vec[y*Y + x];
+			size_t idx = x*Y + y;
+			assert(idx < vec.size());
+			return vec[idx];
 		}
 
 		typename Vector::iterator begin() {
