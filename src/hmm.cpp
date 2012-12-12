@@ -5,9 +5,12 @@
 #include <boost/random/uniform_01.hpp>
 
 using namespace std;
+using namespace pslrhmm;
 
 namespace pslrhmm {
-	void HMM::initRandom(Random& r, size_t states, std::vector<Emission*> alphabet) {
+
+	template<typename E>
+	void HMM<E>::initRandom(Random& r, size_t states, std::vector<E> alphabet) {
 		boost::uniform_01<> u;
 
 		this->states.clear();
@@ -35,7 +38,8 @@ namespace pslrhmm {
 		}
 	}
 
-	void HMM::initUniform(size_t states, std::vector<Emission*> alphabet) {
+	template<typename E>
+	void HMM<E>::initUniform(size_t states, std::vector<E> alphabet) {
 		double sinv = 1.0l / states;
 		double einv = 1.0l / alphabet.size();
 		this->states.clear();
@@ -63,18 +67,14 @@ namespace pslrhmm {
 		}
 	}
 
-	void HMM::generateSequence(Random& r, Sequence& seq, size_t len) const {
+	template<typename E>
+	void HMM<E>::generateSequence(Random& r, Sequence& seq, size_t len) const {
 		const State* s = this->generateInitialState(r);
 		for (size_t i=0; i<len; i++) {
 			seq.push_back(s->generateEmission(r));
 			s = s->generateState(r);
 		}
 	}
-
-	const State* HMM::generateInitialState(Random& r) const {
-		return init_prob.select(r);
-	}
-
 
 	struct LogDouble {
 		class NegativeNumberException : public exception {
@@ -142,13 +142,14 @@ namespace pslrhmm {
 		}
 	};
 
-	double HMM::calcSequenceLikelihoodLog(const Sequence& seq) const {
+	template<typename E>
+	double HMM<E>::calcSequenceLikelihoodLog(const Sequence& seq) const {
 		const size_t num_states = states.size();
 		vector<LogDouble> alpha_old(num_states);
 		vector<LogDouble> alpha    (num_states);
 
 		// Initialization
-		const Emission* e = seq[0];
+		E e = seq[0];
 		for (size_t i=0; i<num_states; i++) {
 			const State* s = states[i];
 			alpha[i] = Pi(s)*B(s, e);
@@ -176,8 +177,8 @@ namespace pslrhmm {
 		return sum.l;	
 	}
 
-
-	void HMM::forward_scaled(const Sequence& seq,
+	template<typename E>
+	void HMM<E>::forward_scaled(const Sequence& seq,
 				Matrix<double>& alpha, std::vector<double>& c) const {
 		const size_t T = seq.size();
 		const size_t num_states = states.size();
@@ -206,7 +207,8 @@ namespace pslrhmm {
 		}
 	}
 
-	void HMM::backward_scaled(const Sequence& seq,
+	template<typename E>
+	void HMM<E>::backward_scaled(const Sequence& seq,
 				const Matrix<double>& alpha, const std::vector<double>& c,
 				Matrix<double>& beta) const {
 		const size_t T = seq.size();
@@ -231,14 +233,15 @@ namespace pslrhmm {
 		}
 	}
 
-	void HMM::baum_welch(const vector<Sequence>& sequences) {
+	template<typename E>
+	void HMM<E>::baum_welch(const vector<Sequence>& sequences) {
 		const size_t num_states = states.size();
 
 		Matrix<double> ahat_numerator(num_states, num_states);
 		Matrix<double> ahat_denominator(num_states, num_states);
 
 		// Indexed first by state number, then by emission
-		vector< SparseVector<const Emission*> > bhat_numerator(num_states);
+		vector< SparseVector<E> > bhat_numerator(num_states);
 		vector< double > bhat_denominator(num_states);
 
 		#pragma omp parallel for \
@@ -271,24 +274,24 @@ namespace pslrhmm {
 
 					double& an = ahat_numerator(i, j);
 					double& ad = ahat_denominator(i, j);
-					#pragma omp atomic
+					// #pragma omp atomic
 					an += numerator_sum;
-					#pragma omp atomic
+					// #pragma omp atomic
 					ad += demoninator_sum;
 				}
 			}
 
 			// Updates for bhat
 			for (size_t j=0; j<num_states; j++) {
-				SparseVector<const Emission*>& bn = bhat_numerator[j];
+				SparseVector<E>& bn = bhat_numerator[j];
 				double& bd = bhat_denominator[j];
 				for (size_t t=0; t<T; t++) {
-					const Emission* e = seq[t];
-					#pragma omp critical(bn_update)
+					E e = seq[t];
+					// #pragma omp critical(bn_update)
 					bn[e] += alpha(t, j) * beta(t, j) / c[t];
 
 					double bd_add = alpha(t, j) * beta(t, j) / c[t];
-					#pragma omp atomic
+					// #pragma omp atomic
 					bd += bd_add;
 				}
 			}
@@ -305,7 +308,7 @@ namespace pslrhmm {
 			}
 			si->transition_probs.normalize();
 
-			SparseVector<const Emission*>& bn = bhat_numerator[i];
+			SparseVector<E>& bn = bhat_numerator[i];
 			double bd = bhat_denominator[i];
 			si->emissions_probs.clear();
 			BOOST_FOREACH(auto p, bn) {
@@ -314,4 +317,6 @@ namespace pslrhmm {
 			si->emissions_probs.normalize();
 		}
 	}
+
+	template class HMM<uint64_t>;
 }

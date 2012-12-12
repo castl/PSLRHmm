@@ -1,7 +1,7 @@
 #ifndef __pslrhmm_sparse_vector_hpp__
 #define __pslrhmm_sparse_vector_hpp__
 
-#include <map>
+#include <unordered_map>
 #include <cassert>
 #include <boost/foreach.hpp>
 #include <boost/random/uniform_01.hpp>
@@ -10,7 +10,7 @@ namespace pslrhmm {
 
 	template<typename K>
 	class SparseVector {
-		typedef std::map<K, double> Map;
+		typedef std::unordered_map<K, double> Map;
 		Map vec;
 
 	public:

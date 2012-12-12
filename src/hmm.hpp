@@ -9,50 +9,34 @@
 #include "matrix.hpp"
 
 namespace pslrhmm {
-
-	class Emission {
-	public:
-		virtual bool operator=(const Emission& e) const = 0;
-		virtual int  operator>(const Emission& e) const = 0;
-	};
-
-	class IntEmission : public Emission {
-		uint64_t i;
-	public:
-		IntEmission(uint64_t i) : i(i) { }
-
-		virtual bool operator=(const Emission& e) const {
-			return this->i == dynamic_cast<const IntEmission&>(e).i;
-		}
-		virtual int  operator>(const Emission& e) const {
-			return this->i > dynamic_cast<const IntEmission&>(e).i;
-		}
-	};
-
+	template <typename E>
 	class HMM;
-	class State {
-		friend class HMM;
-		HMM& owner;
 
-		SparseVector<const Emission*>  emissions_probs;
-		SparseVector<const State*> 	   transition_probs;
+	template<typename E>
+	class StateTempl {
+		friend class HMM<E>;
+		HMM<E>& owner;
 
-		State(HMM& hmm) : owner(hmm) { }
+		SparseVector<E> emissions_probs;
+		SparseVector<const StateTempl*> transition_probs;
+
+		StateTempl(HMM<E>& hmm) : owner(hmm) { }
 
 	public:
 		template<typename Random>
-		const Emission* generateEmission(Random& r) const {
+		E generateEmission(Random& r) const {
 			return emissions_probs.select(r);
 		}
 
 		template<typename Random>
-		const State*    generateState(Random& r)    const {
+		const StateTempl*    generateState(Random& r)    const {
 			return transition_probs.select(r);
 		}
 	};
 
+	template<typename E = uint64_t>
 	class HMM {
-		friend class State;
+		typedef StateTempl<E> State;
 
 		std::vector<State*>  states;
 		SparseVector<State*> init_prob;
@@ -74,10 +58,10 @@ namespace pslrhmm {
 			return A(states[i], states[j]);
 		}
 
-		double B(const State* s, const Emission* e) const {
+		double B(const State* s, E e) const {
 			return s->emissions_probs.get(e);	
 		}
-		double B(size_t s, const Emission* e) const {
+		double B(size_t s, E e) const {
 			return B(states[s], e);
 		}
 
@@ -89,15 +73,18 @@ namespace pslrhmm {
 		}
 
 	public:
-		typedef std::vector<const Emission*> Sequence;
+		typedef E Emission;
+		typedef std::vector<E> Sequence;
 		typedef boost::mt19937 Random;
 
 		HMM() { }
 
-		void initRandom(Random& r, size_t states, std::vector<Emission*> alphabet);
-		void initUniform(size_t states, std::vector<Emission*> alphabet);
+		void initRandom(Random& r, size_t states, std::vector<E> alphabet);
+		void initUniform(size_t states, std::vector<E> alphabet);
 
-		const State* generateInitialState(Random& r) const;
+		const State* generateInitialState(Random& r) const {
+			return init_prob.select(r);
+		}
 		void generateSequence(Random& r, Sequence&, size_t length) const;
 		double calcSequenceLikelihoodLog(const Sequence&) const;
 		double calcSequenceLikelihood(const Sequence& s) const {
