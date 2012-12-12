@@ -14,6 +14,10 @@ namespace pslrhmm {
 		Map vec;
 
 	public:
+		// typedef typename Map::type type;
+		typedef typename Map::iterator iterator;
+		typedef typename Map::const_iterator const_iterator;
+
 		void normalize() {
 			double total = 0.0;
 			BOOST_FOREACH(auto p, vec) {
@@ -46,6 +50,14 @@ namespace pslrhmm {
 			return vec[k];
 		}
 
+		void set(const K k, double d) {
+			if (d == 0.0) {
+				vec.erase(k);
+			} else {
+				vec[k] = d;
+			}
+		}
+
 		double operator[](const K k) const {
 			auto f = vec.find(k);
 			if (f == vec.end())
@@ -60,11 +72,19 @@ namespace pslrhmm {
 			return f->second;
 		}
 
-		typename Map::iterator begin() {
+		iterator begin() {
 			return vec.begin();
 		}
 
-		typename Map::iterator end() {
+		iterator end() {
+			return vec.end();
+		}
+
+		const_iterator begin() const {
+			return vec.begin();
+		}
+
+		const_iterator end() const {
 			return vec.end();
 		}
 	};

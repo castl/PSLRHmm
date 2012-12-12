@@ -6,6 +6,7 @@
 #include <boost/random/mersenne_twister.hpp>
 
 #include "sparse_vector.hpp"
+#include "matrix.hpp"
 
 namespace pslrhmm {
 
@@ -94,7 +95,7 @@ namespace pslrhmm {
 		HMM() { }
 
 		void initRandom(Random& r, size_t states, std::vector<Emission*> alphabet);
-		void train(size_t states, std::vector<Sequence> sequences);
+		void initUniform(size_t states, std::vector<Emission*> alphabet);
 
 		const State* generateInitialState(Random& r) const;
 		void generateSequence(Random& r, Sequence&, size_t length) const;
@@ -103,6 +104,12 @@ namespace pslrhmm {
 			return std::exp(calcSequenceLikelihoodLog(s));
 		}
 
+		void forward_scaled(const Sequence&,
+					Matrix<double>& alpha, std::vector<double>& c) const;
+		void backward_scaled(const Sequence&,
+					const Matrix<double>& alpha, const std::vector<double>& c,
+					Matrix<double>& beta) const;
+		void baum_welch(const std::vector<Sequence>& sequences);
 
 		State& operator[](size_t i) {
 			assert(i < states.size());
