@@ -99,6 +99,9 @@ namespace pslrhmm {
 		const State* generateInitialState(Random& r) const;
 		void generateSequence(Random& r, Sequence&, size_t length) const;
 		double calcSequenceLikelihoodLog(const Sequence&) const;
+		double calcSequenceLikelihood(const Sequence& s) const {
+			return std::exp(calcSequenceLikelihoodLog(s));
+		}
 
 
 		State& operator[](size_t i) {

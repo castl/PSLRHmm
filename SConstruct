@@ -4,7 +4,7 @@ env = Environment(
 	CXX = 'clang++',
 	# CXXFLAGS = ['-O0', '-mfpmath=sse', '-msse4', '-march=native',
 	          # '-Wall', '-g', '-std=c++0x', '-fopenmp'],
-	CXXFLAGS = ['-O0', '-msse4', '-std=c++11', '-Wall', '-g'],
+	CXXFLAGS = ['-O3', '-msse4', '-std=c++11', '-Wall', '-g'],
 	LIBS=['boost_thread-mt', 'boost_program_options-mt'])
 
 hmmlib = env.Library('psrlhmm', Glob("src/*.cpp"))

@@ -1,5 +1,7 @@
 #include "hmm.hpp"
 
+#include <cmath>
+#include <limits>
 #include <boost/random/uniform_01.hpp>
 
 using namespace std;
@@ -46,10 +48,76 @@ namespace pslrhmm {
 	}
 
 
+	struct LogDouble {
+		class NegativeNumberException : public exception {
+		public:
+			double d;
+			NegativeNumberException(double d) : d(d) { }
+		};
+
+		double l;
+
+		LogDouble() : l(std::numeric_limits<double>::quiet_NaN()) { }
+		LogDouble(double d) {
+			(*this) = d;
+		}
+
+		void operator=(double d) {
+			if (d == 0)
+				l = numeric_limits<double>::quiet_NaN();
+			else if (d > 0.0)
+				l = std::log(d);
+			else 
+				throw NegativeNumberException(d);
+		}
+
+		LogDouble operator+(double d) const {
+			return (*this) + LogDouble(d);
+		}
+
+		LogDouble operator+(LogDouble y) const {
+			LogDouble x = *this;
+			LogDouble r;
+			if (isnan(x.l))
+				return y;
+			else if (isnan(y.l))
+				return x;
+			else if (x.l > y.l) {
+				r.l = x.l + std::log(1 + std::exp(y.l - x.l));
+			} else {
+				r.l = y.l + std::log(1 + std::exp(x.l - y.l));
+			}
+
+			return r;
+		}
+
+		LogDouble operator*(double d) const {
+			LogDouble r;
+			r.l = this->l + std::log(d);
+			return r;
+		}
+
+		LogDouble operator*(LogDouble d) const {
+			LogDouble r;
+			r.l = this->l + d.l;
+			return r;
+		}
+
+		double exp() const {
+			if (isnan(this->l))
+				return 0.0;
+			return std::exp(this->l);
+		}
+
+		double log() const {
+			return this->l;
+		}
+	};
+
 	double HMM::calcSequenceLikelihoodLog(const Sequence& seq) const {
 		const size_t num_states = states.size();
-		vector<double> alpha_old(num_states);
-		vector<double> alpha    (num_states);
+		vector<LogDouble> alpha_old(num_states);
+		vector<LogDouble> alpha    (num_states);
 
 		// Initialization
 		const Emission* e = seq[0];
@@ -65,18 +133,18 @@ namespace pslrhmm {
 			for (size_t i=0; i<num_states; i++) {
 				const State* s = states[i];
 
-				double t = 0.0;
+				LogDouble t = 0.0;
 				for (size_t j=0; j<num_states; j++) {
-					t += alpha_old[j] * A(j, s);
+					t = t + alpha_old[j] * A(j, s);
 				}
 				alpha[i] = t * B(s, e);
 			}
 		}
 
-		double sum = 0.0;
+		LogDouble sum = 0.0;
 		for (size_t i=0; i<num_states; i++) {
-			sum += alpha[i];
+			sum = sum + alpha[i];
 		}
-		return log(sum);	
+		return sum.l;	
 	}
 }
