@@ -241,6 +241,10 @@ namespace pslrhmm {
 		vector< SparseVector<const Emission*> > bhat_numerator(num_states);
 		vector< double > bhat_denominator(num_states);
 
+		#pragma omp parallel for \
+			default(none) \
+			shared(sequences, ahat_numerator, ahat_denominator, \
+				   bhat_numerator, bhat_denominator)
 		for (size_t l=0; l<sequences.size(); l++) {
 			const Sequence& seq = sequences[l];
 			const size_t T = seq.size();
@@ -265,8 +269,12 @@ namespace pslrhmm {
 							alpha(t, i) * beta(t, i) / c[t];
 					}
 
-					ahat_numerator(i, j) += numerator_sum;
-					ahat_denominator(i, j) += demoninator_sum;
+					double& an = ahat_numerator(i, j);
+					double& ad = ahat_denominator(i, j);
+					#pragma omp atomic
+					an += numerator_sum;
+					#pragma omp atomic
+					ad += demoninator_sum;
 				}
 			}
 
@@ -276,8 +284,12 @@ namespace pslrhmm {
 				double& bd = bhat_denominator[j];
 				for (size_t t=0; t<T; t++) {
 					const Emission* e = seq[t];
+					#pragma omp critical(bn_update)
 					bn[e] += alpha(t, j) * beta(t, j) / c[t];
-					bd += alpha(t, j) * beta(t, j) / c[t];
+
+					double bd_add = alpha(t, j) * beta(t, j) / c[t];
+					#pragma omp atomic
+					bd += bd_add;
 				}
 			}
 		}
