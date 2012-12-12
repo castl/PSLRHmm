@@ -274,9 +274,9 @@ namespace pslrhmm {
 
 					double& an = ahat_numerator(i, j);
 					double& ad = ahat_denominator(i, j);
-					// #pragma omp atomic
+					#pragma omp atomic
 					an += numerator_sum;
-					// #pragma omp atomic
+					#pragma omp atomic
 					ad += demoninator_sum;
 				}
 			}
@@ -287,11 +287,11 @@ namespace pslrhmm {
 				double& bd = bhat_denominator[j];
 				for (size_t t=0; t<T; t++) {
 					E e = seq[t];
-					// #pragma omp critical(bn_update)
+					#pragma omp critical(bn_update)
 					bn[e] += alpha(t, j) * beta(t, j) / c[t];
 
 					double bd_add = alpha(t, j) * beta(t, j) / c[t];
-					// #pragma omp atomic
+					#pragma omp atomic
 					bd += bd_add;
 				}
 			}
