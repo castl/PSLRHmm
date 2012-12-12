@@ -232,7 +232,6 @@ namespace pslrhmm {
 	}
 
 	void HMM::baum_welch(const vector<Sequence>& sequences) {
-
 		const size_t num_states = states.size();
 
 		Matrix<double> ahat_numerator(num_states, num_states);

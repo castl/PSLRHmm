@@ -17,27 +17,28 @@ namespace pslrhmm {
 	public:
 		class linear_slice {
 			friend class Matrix;
-			Matrix& m;
-			size_t start, end;
+			K* data;
+			size_t size;
 
-			linear_slice(Matrix& m, size_t start, size_t end) :
-				m(m), start(start), end(end) {
-					assert(start <= m.vec.size());
-					assert(end <= m.vec.size());
-				 }
+			linear_slice(Matrix& m, size_t start, size_t end) {
+				assert(start <= m.vec.size());
+				assert(end <= m.vec.size());
+				this->data = &m.vec.data()[start];
+				this->size = end - start;
+			 }
 
 		public:
 			K sum() {
 				K r = K();
-				for (size_t i=start; i<end; i++) {
-					r += m.vec[i];
+				for (size_t i=0; i<size; i++) {
+					r += data[i];
 				}
 				return r;
 			}
 
 			void operator*=(K k) {
-				for (size_t i=start; i<end; i++) {
-					m.vec[i] *= k;
+				for (size_t i=0; i<size; i++) {
+					data[i] *= k;
 				}
 			}
 		};
