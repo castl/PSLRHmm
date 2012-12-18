@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_01.hpp>
 
 #include "sparse_vector.hpp"
 #include "matrix.hpp"
@@ -12,20 +13,64 @@ namespace pslrhmm {
 	template <typename E>
 	class HMM;
 
+	template<typename A>
+	class DiscreteEmissions {
+		SparseVector<A> emissions_probs;
+
+	public:
+		typedef A Emission;
+
+		template<typename Random>
+		void initRandom(Random& r, const std::vector<A>& alphabet) {
+			boost::uniform_01<> u;
+
+			emissions_probs.clear();
+			BOOST_FOREACH(auto e, alphabet) {
+				emissions_probs[e] = u(r);
+			}
+			emissions_probs.normalize();
+		}
+
+		void initUniform(const std::vector<A>& alphabet) {
+			const double einv = 1.0l / alphabet.size();
+			emissions_probs.clear();
+			BOOST_FOREACH(auto e, alphabet) {
+				emissions_probs[e] = einv;
+			}
+			emissions_probs.normalize();
+		}
+
+		template<typename Random>
+		A generateEmission(Random& r) const {
+			return emissions_probs.select(r);
+		}
+
+		double likelihood(A a) const {
+			return emissions_probs.get(a);
+		}
+
+		void push(A a, double prob) {
+			emissions_probs[a] += prob;
+		}
+		void computeDistribution() {
+			emissions_probs.normalize();
+		}
+	};
+
 	template<typename E>
 	class StateTempl {
 		friend class HMM<E>;
 		HMM<E>& owner;
 
-		SparseVector<E> emissions_probs;
+		E emissions_probs;
 		SparseVector<const StateTempl*> transition_probs;
 
 		StateTempl(HMM<E>& hmm) : owner(hmm) { }
 
 	public:
 		template<typename Random>
-		E generateEmission(Random& r) const {
-			return emissions_probs.select(r);
+		typename E::Emission generateEmission(Random& r) const {
+			return emissions_probs.generateEmission(r);
 		}
 
 		template<typename Random>
@@ -34,10 +79,15 @@ namespace pslrhmm {
 		}
 	};
 
-	template<typename E = uint64_t>
+	template<typename E = DiscreteEmissions<uint64_t> >
 	class HMM {
+	public:
+		typedef typename E::Emission Emission;
+		typedef std::vector<Emission> Sequence;
+		typedef boost::mt19937 Random;
 		typedef StateTempl<E> State;
 
+	private:
 		std::vector<State*>  states;
 		SparseVector<State*> init_prob;
 
@@ -46,7 +96,9 @@ namespace pslrhmm {
 		****/
 
 		double A(const State* s, const State* t) const {
-			return s->transition_probs.get(t);	
+			double d = s->transition_probs.get(t);	
+			// assert(d < 1.000001);
+			return d;
 		}
 		double A(const State* i, size_t j) const {
 			return A(i, states[j]);
@@ -58,29 +110,31 @@ namespace pslrhmm {
 			return A(states[i], states[j]);
 		}
 
-		double B(const State* s, E e) const {
-			return s->emissions_probs.get(e);	
+		double B(const State* s, Emission e) const {
+			double d = s->emissions_probs.likelihood(e);
+			// assert(d < 1.0000001);
+			return d;
 		}
-		double B(size_t s, E e) const {
+		double B(size_t s, Emission e) const {
 			return B(states[s], e);
 		}
 
 		double Pi(const State* s) const {
-			return init_prob.get((State*)s);
+			double d = init_prob.get((State*)s);
+			// assert(d < 1.0000001);
+			return d;
 		}
 		double Pi(size_t s) const {
-			return init_prob.get(states[s]);
+			double d = init_prob.get(states[s]);
+			// assert(d < 1.0000001);
+			return d;
 		}
 
 	public:
-		typedef E Emission;
-		typedef std::vector<E> Sequence;
-		typedef boost::mt19937 Random;
-
 		HMM() { }
 
-		void initRandom(Random& r, size_t states, std::vector<E> alphabet);
-		void initUniform(size_t states, std::vector<E> alphabet);
+		void initRandom(Random& r, size_t states, std::vector<Emission> alphabet);
+		void initUniform(size_t states, std::vector<Emission> alphabet);
 
 		const State* generateInitialState(Random& r) const {
 			return init_prob.select(r);

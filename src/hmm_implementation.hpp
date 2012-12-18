@@ -10,7 +10,7 @@ using namespace pslrhmm;
 namespace pslrhmm {
 
 	template<typename E>
-	void HMM<E>::initRandom(Random& r, size_t states, std::vector<E> alphabet) {
+	void HMM<E>::initRandom(Random& r, size_t states, std::vector<Emission> alphabet) {
 		boost::uniform_01<> u;
 
 		this->states.clear();
@@ -21,27 +21,20 @@ namespace pslrhmm {
 			this->states.push_back(s);
 			this->init_prob[s] = u(r);
 		}
-
 		this->init_prob.normalize();
-
 
 		BOOST_FOREACH(auto s, this->states) {
 			BOOST_FOREACH(auto t, this->states) {
 				s->transition_probs[t] = u(r);
 			}
 			s->transition_probs.normalize();
-
-			BOOST_FOREACH(auto e, alphabet) {
-				s->emissions_probs[e] = u(r);
-			}
-			s->emissions_probs.normalize();
+			s->emissions_probs.initRandom(r, alphabet);
 		}
 	}
 
 	template<typename E>
-	void HMM<E>::initUniform(size_t states, std::vector<E> alphabet) {
+	void HMM<E>::initUniform(size_t states, std::vector<Emission> alphabet) {
 		double sinv = 1.0l / states;
-		double einv = 1.0l / alphabet.size();
 		this->states.clear();
 		this->init_prob.clear();
 
@@ -50,20 +43,14 @@ namespace pslrhmm {
 			this->states.push_back(s);
 			this->init_prob[s] = sinv;
 		}
-
 		this->init_prob.normalize();
-
 
 		BOOST_FOREACH(auto s, this->states) {
 			BOOST_FOREACH(auto t, this->states) {
 				s->transition_probs[t] = sinv;
 			}
 			s->transition_probs.normalize();
-
-			BOOST_FOREACH(auto e, alphabet) {
-				s->emissions_probs[e] = einv;
-			}
-			s->emissions_probs.normalize();
+			s->emissions_probs.initUniform(alphabet);
 		}
 	}
 
@@ -155,7 +142,7 @@ namespace pslrhmm {
 		vector<LogDouble> alpha    (num_states);
 
 		// Initialization
-		E e = seq[0];
+		Emission e = seq[0];
 		for (size_t i=0; i<num_states; i++) {
 			const State* s = states[i];
 			alpha[i] = Pi(s)*B(s, e);
@@ -180,7 +167,7 @@ namespace pslrhmm {
 		for (size_t i=0; i<num_states; i++) {
 			sum = sum + alpha[i];
 		}
-		return sum.l;	
+		return sum.log();	
 	}
 
 	template<typename E>
@@ -265,14 +252,12 @@ namespace pslrhmm {
 		Matrix<double> ahat_numerator(num_states, num_states);
 		Matrix<double> ahat_denominator(num_states, num_states);
 
-		// Indexed first by state number, then by emission
-		vector< SparseVector<E> > bhat_numerator(num_states);
-		vector< double > bhat_denominator(num_states);
+		// Indexed by state number
+		vector< E > bhat(num_states);
 
 		#pragma omp parallel for \
 			default(none) \
-			shared(sequences, ahat_numerator, ahat_denominator, \
-				   bhat_numerator, bhat_denominator)
+			shared(sequences, ahat_numerator, ahat_denominator, bhat)
 		for (size_t l=0; l<sequences.size(); l++) {
 			const Sequence& seq = sequences[l];
 			const size_t T = seq.size();
@@ -307,17 +292,15 @@ namespace pslrhmm {
 			}
 
 			// Updates for bhat
+			#pragma omp critical(bn_update)
 			for (size_t j=0; j<num_states; j++) {
-				SparseVector<E>& bn = bhat_numerator[j];
-				double& bd = bhat_denominator[j];
-				for (size_t t=0; t<T; t++) {
-					E e = seq[t];
-					#pragma omp critical(bn_update)
-					bn[e] += alpha(t, j) * beta(t, j) / c[t];
+				E& bh = bhat[j];
 
-					double bd_add = alpha(t, j) * beta(t, j) / c[t];
-					#pragma omp atomic
-					bd += bd_add;
+				for (size_t t=0; t<T; t++) {
+					Emission e = seq[t];
+					double prob = alpha(t, j) * beta(t, j) / c[t];
+
+					bh.push(e, prob);
 				}
 			}
 		}
@@ -333,13 +316,9 @@ namespace pslrhmm {
 			}
 			si->transition_probs.normalize();
 
-			SparseVector<E>& bn = bhat_numerator[i];
-			double bd = bhat_denominator[i];
-			si->emissions_probs.clear();
-			BOOST_FOREACH(auto p, bn) {
-				si->emissions_probs[p.first] = p.second / bd;
-			}
-			si->emissions_probs.normalize();
+			E& bn = bhat[i];
+			bn.computeDistribution();
+			si->emissions_probs = bn;
 		}
 	}
 }
