@@ -87,8 +87,14 @@ namespace pslrhmm {
 		}
 		void generateSequence(Random& r, Sequence&, size_t length) const;
 		double calcSequenceLikelihoodLog(const Sequence&) const;
+		double calcSequenceLikelihoodLogNorm(const Sequence& s) const {
+			return calcSequenceLikelihoodLog(s) / s.size();
+		}
 		double calcSequenceLikelihood(const Sequence& s) const {
 			return std::exp(calcSequenceLikelihoodLog(s));
+		}
+		double calcSequenceLikelihoodNorm(const Sequence& s) const {
+			return std::exp(calcSequenceLikelihoodLogNorm(s));
 		}
 
 		double calcSequenceLikelihoodLog(const std::vector<Sequence>&) const;
