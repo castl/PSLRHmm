@@ -34,6 +34,16 @@ namespace pslrhmm {
 
 	template<typename E>
 	void HMM<E>::initUniform(size_t states, std::vector<Emission> alphabet) {
+		E emi;
+		BOOST_FOREACH(auto e, alphabet) {
+			emi.push(e, 1.0);
+		}
+		emi.computeDistribution();
+		initUniform(states, emi);
+	}
+
+	template<typename E>
+	void HMM<E>::initUniform(size_t states, E emi) {
 		double sinv = 1.0l / states;
 		this->states.clear();
 		this->init_prob.clear();
@@ -50,7 +60,7 @@ namespace pslrhmm {
 				s->transition_probs[t] = sinv;
 			}
 			s->transition_probs.normalize();
-			s->emissions_probs.initUniform(alphabet);
+			s->emissions_probs = emi;
 		}
 	}
 

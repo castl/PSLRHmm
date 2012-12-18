@@ -6,28 +6,20 @@ using namespace pslrhmm;
 using namespace std;
 
 #define NUM_SEQ 100
+typedef NormalEmissions Emission;
+typedef HMM<Emission> MyHMM;
 
-template<typename E>
-void initAlphabet(vector<E>& alpha, size_t num) {
-	for (size_t i=0; i<num; i++) {
-		alpha.push_back((uint64_t)i);
-	}
-}
-
-BOOST_AUTO_TEST_CASE( generate1 ) {
-	vector<HMM<>::Emission> alphabet;
-	initAlphabet(alphabet, 10);
-
-	HMM<>::Random r(time(NULL));
-	HMM<> hmm1, hmm2;
-	hmm1.initRandom(r, 20, alphabet);
-	hmm2.initRandom(r, 20, alphabet);
+BOOST_AUTO_TEST_CASE( continuous_generate1 ) {
+	MyHMM::Random r(time(NULL));
+	MyHMM hmm1, hmm2;
+	hmm1.initRandom(r, 20);
+	hmm2.initRandom(r, 20);
 
 	double ts1l1 = 0.0, ts1l2 = 0.0, ts2l1 = 0.0, ts2l2 = 0.0; 
 	#pragma omp parallel for \
 		default(shared)
 	for(size_t i=0; i<NUM_SEQ; i++) {
-		HMM<>::Sequence s1, s2;
+		MyHMM::Sequence s1, s2;
 		hmm1.generateSequence(r, s1, 200);
 		hmm2.generateSequence(r, s2, 200);
 
@@ -66,20 +58,19 @@ BOOST_AUTO_TEST_CASE( generate1 ) {
 	BOOST_CHECK(ts2l1 < ts2l2);
 }
 
-BOOST_AUTO_TEST_CASE( generate_train1 ) {
-	vector<HMM<>::Emission> alphabet;
-	initAlphabet(alphabet, 10);
+BOOST_AUTO_TEST_CASE( continuous_generate_train1 ) {
+	Emission ex;
 
-	HMM<>::Random r(time(NULL));
-	HMM<> hmm1, hmm2;
-	hmm1.initRandom(r, 15, alphabet);
-	hmm2.initRandom(r, 15, alphabet);
+	MyHMM::Random r(time(NULL));
+	MyHMM hmm1, hmm2;
+	hmm1.initRandom(r, 15);
+	hmm2.initRandom(r, 15);
 
-	vector<HMM<>::Sequence> seqs1, seqs2;
+	vector<MyHMM::Sequence> seqs1, seqs2;
 	#pragma omp parallel for \
 		default(shared)
 	for(size_t i=0; i<NUM_SEQ; i++) {
-		HMM<>::Sequence s1, s2;
+		MyHMM::Sequence s1, s2;
 		hmm1.generateSequence(r, s1, 500);
 		hmm2.generateSequence(r, s2, 500);
 
@@ -91,12 +82,12 @@ BOOST_AUTO_TEST_CASE( generate_train1 ) {
 	}
 
 	// Trained HMMs
-	HMM<> hmm1a, hmm2a;
-	hmm1a.initUniform(15, alphabet);
+	MyHMM hmm1a, hmm2a;
+	hmm1a.initUniform(15, ex);
 	for (size_t i=0; i<10; i++)
 		hmm1a.baum_welch(seqs1);
 
-	hmm2a.initUniform(15, alphabet);
+	hmm2a.initUniform(15, ex);
 	for (size_t i=0; i<10; i++)
 		hmm2a.baum_welch(seqs2);
 
@@ -104,7 +95,7 @@ BOOST_AUTO_TEST_CASE( generate_train1 ) {
 	#pragma omp parallel for \
 		default(shared)
 	for(size_t i=0; i<NUM_SEQ; i++) {
-		HMM<>::Sequence s1, s2;
+		MyHMM::Sequence s1, s2;
 		hmm1.generateSequence(r, s1, 500);
 		hmm2.generateSequence(r, s2, 500);
 

@@ -90,8 +90,10 @@ namespace pslrhmm {
 	public:
 		HMM() { }
 
-		void initRandom(Random& r, size_t states, std::vector<Emission> alphabet);
-		void initUniform(size_t states, std::vector<Emission> alphabet);
+		void initRandom(Random& r, size_t states,
+				std::vector<Emission> alphabet = std::vector<Emission>());
+		void initUniform(size_t states, std::vector<Emission> example);
+		void initUniform(size_t states, E example);
 
 		const State* generateInitialState(Random& r) const {
 			return init_prob.select(r);
