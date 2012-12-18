@@ -82,14 +82,16 @@ namespace pslrhmm {
 
 		double l;
 
-		LogDouble() : l(std::numeric_limits<double>::quiet_NaN()) { }
+		LogDouble() : l(-std::numeric_limits<double>::infinity()) { }
 		LogDouble(double d) {
 			(*this) = d;
 		}
 
 		void operator=(double d) {
+			assert(!std::isnan(d));
+			assert(!std::isinf(d));
 			if (d == 0)
-				l = numeric_limits<double>::quiet_NaN();
+				l = -numeric_limits<double>::infinity();
 			else if (d > 0.0)
 				l = std::log(d);
 			else 
@@ -103,9 +105,9 @@ namespace pslrhmm {
 		LogDouble operator+(LogDouble y) const {
 			LogDouble x = *this;
 			LogDouble r;
-			if (std::isnan(x.l))
+			if (std::isinf(x.l))
 				return y;
-			else if (std::isnan(y.l))
+			else if (std::isinf(y.l))
 				return x;
 			else if (x.l > y.l) {
 				r.l = x.l + std::log(1 + std::exp(y.l - x.l));
@@ -117,9 +119,8 @@ namespace pslrhmm {
 		}
 
 		LogDouble operator*(double d) const {
-			LogDouble r;
-			r.l = this->l + std::log(d);
-			return r;
+			LogDouble o = d;
+			return (*this) * o;
 		}
 
 		LogDouble operator*(LogDouble d) const {
@@ -135,7 +136,7 @@ namespace pslrhmm {
 		}
 
 		double exp() const {
-			if (std::isnan(this->l))
+			if (std::isinf(this->l))
 				return 0.0;
 			return std::exp(this->l);
 		}
@@ -153,12 +154,16 @@ namespace pslrhmm {
 
 		// Initialization
 		Emission e = seq[0];
+		// LogDouble tot = 0.0;
 		for (size_t i=0; i<num_states; i++) {
 			const State* s = states[i];
 			alpha[i] = Pi(s)*B(s, e);
+			// tot = tot + alpha[i];
 		}
+		// assert(tot.exp() > 0.0);
 
 		for (size_t oi=1; oi<seq.size(); oi++) {
+			// tot = 0.0;
 			e = seq[oi];
 			alpha_old.swap(alpha);
 
@@ -170,7 +175,9 @@ namespace pslrhmm {
 					t = t + alpha_old[j] * A(j, s);
 				}
 				alpha[i] = t * B(s, e);
+				// tot = tot + alpha[i];
 			}
+			// assert(tot.exp() > 0.0);
 		}
 
 		LogDouble sum = 0.0;
@@ -266,7 +273,6 @@ namespace pslrhmm {
 		vector< E > bhat(num_states);
 
 		#pragma omp parallel for \
-			default(none) \
 			shared(sequences, ahat_numerator, ahat_denominator, bhat)
 		for (size_t l=0; l<sequences.size(); l++) {
 			const Sequence& seq = sequences[l];
@@ -309,6 +315,8 @@ namespace pslrhmm {
 				for (size_t t=0; t<T; t++) {
 					Emission e = seq[t];
 					double prob = alpha(t, j) * beta(t, j) / c[t];
+					assert(!std::isnan(prob));
+					assert(!std::isinf(prob));
 
 					bh.push(e, prob);
 				}

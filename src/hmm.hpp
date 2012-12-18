@@ -104,15 +104,24 @@ namespace pslrhmm {
 			return calcSequenceLikelihoodLog(s) / s.size();
 		}
 		double calcSequenceLikelihood(const Sequence& s) const {
-			return std::exp(calcSequenceLikelihoodLog(s));
+			double l = calcSequenceLikelihoodLog(s);
+			// if (std::isinf(l) && l < 0.0)
+			// 	return 0.0;
+			return std::exp(l);
 		}
 		double calcSequenceLikelihoodNorm(const Sequence& s) const {
-			return std::exp(calcSequenceLikelihoodLogNorm(s));
+			double l = calcSequenceLikelihoodLogNorm(s);
+			// if (std::isinf(l) && l < 0.0)
+			// 	return 0.0;
+			return std::exp(l);
 		}
 
 		double calcSequenceLikelihoodLog(const std::vector<Sequence>&) const;
 		double calcSequenceLikelihood(const std::vector<Sequence>& s) const {
-			return std::exp(calcSequenceLikelihoodLog(s));
+			double l = calcSequenceLikelihoodLog(s);
+			// if (std::isinf(l) && l < 0.0)
+			// 	return 0.0;
+			return std::exp(l);
 		}
 
 		void forward_scaled(const Sequence&,
