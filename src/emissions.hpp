@@ -11,6 +11,8 @@
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/uniform_real.hpp>
 
+#include <mlpack/core/dists/gaussian_distribution.hpp>
+
 #include "sparse_vector.hpp"
 
 namespace pslrhmm {
@@ -51,66 +53,58 @@ namespace pslrhmm {
 	};
 
 	class NormalEmissions {
-		typedef boost::normal_distribution<double> Distribution;
-		Distribution dist;
-		std::vector<std::pair<double, double> > seen;
-
 	public:
 		typedef double Emission;
-		NormalEmissions() : dist(0, 1.0) { }
-		NormalEmissions(double mean, double stdev) : dist(mean, stdev) { }
+
+	private:
+		typedef mlpack::distribution::GaussianDistribution Distribution;
+		Distribution dist;
+
+		std::vector<Emission> observations;
+		std::vector<double> probabilities;
+
+	public:
+		NormalEmissions() : dist(1) { }
+		NormalEmissions(double mean, double stdev) :
+			dist(arma::vec({mean}), arma::mat(arma::vec({stdev}))) {
+		}
 
 		template<typename Random>
 		void initRandom(Random& r, const std::vector<Emission>& alphabet) {
 			boost::uniform_01<Emission> u01;
-			boost::uniform_real<Emission> ur(-10, 10);
-			dist = Distribution(ur(r), u01(r));
+			boost::uniform_real<Emission> ur(-25, 25);
+			dist = Distribution(arma::vec({ur(r)}), arma::mat(arma::vec({u01(r)})));
 		}
 
 		template<typename Random>
 		Emission generateEmission(Random& r) const {
-			boost::variate_generator<Random, Distribution > generator(r, dist);
-			Emission e = generator();
-			assert(!std::isnan(e));
-			assert(!std::isinf(e));
-			return e;
+			return dist.Random()[0];
 		}
 
 		double likelihood(Emission a) const {
-			double sd = dist.sigma();
-			double mean = dist.mean();
-			double z = (a - mean) / sd;
-			double exponent = -0.5 * z * z;
-			assert(exponent < 0.0);
-			double l = std::exp(exponent);
-			// Don't divide -- this normalizes to max == 1
-
-			assert(l >= 0.0);
-			assert(l <= 1.0);
-			return l;
+			return dist.Probability(arma::vec({a}));
 		}
 
 		void push(Emission a, double prob) {
-			seen.push_back(std::pair<double, double>(a, prob));
+			observations.push_back(a);
+			probabilities.push_back(prob);
 		}
 
 		void computeDistribution() {
-			double sum = 0.0;
-			double total = 0.0;
-			BOOST_FOREACH(auto p, seen) {
-				sum += p.first * p.second;
-				total += p.second;
-			}
-			double mean = sum / total;
+			assert(probabilities.size() == observations.size());
+			arma::mat obs(1, observations.size());
+			arma::vec probs(probabilities.size());
 
-			double numerator = 0.0;
-			BOOST_FOREACH(auto p, seen) {
-				numerator += p.second * pow(p.first - mean, 2);
+			size_t sz = probabilities.size();
+			for (size_t i = 0; i < sz; i++) {
+				obs(0, i) = observations[i];
+				probs[i] = probabilities[i];
 			}
-			double stdev = sqrt(numerator / total);
-			seen.clear();
 
-			dist = Distribution(mean, stdev);
+			dist.Estimate(obs, probs);
+
+			observations.clear();
+			probabilities.clear();
 		}
 	};
 

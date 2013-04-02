@@ -85,11 +85,11 @@ BOOST_AUTO_TEST_CASE( continuous_generate_train1 ) {
 	// Trained HMMs
 	MyHMM hmm1a, hmm2a;
 	hmm1a.initUniform(15, ex);
-	for (size_t i=0; i<10; i++)
+	for (size_t i=0; i<50; i++)
 		hmm1a.baum_welch(seqs1);
 
 	hmm2a.initUniform(15, ex);
-	for (size_t i=0; i<10; i++)
+	for (size_t i=0; i<50; i++)
 		hmm2a.baum_welch(seqs2);
 
 	double ts1l1 = 0.0, ts1l2 = 0.0, ts2l1 = 0.0, ts2l2 = 0.0; 
