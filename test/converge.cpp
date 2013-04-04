@@ -3,29 +3,29 @@
 using namespace pslrhmm;
 using namespace std;
 
-#define NUM_SEQ 50
-#define NUM_STATES 10
+#define NUM_SEQ 200
+#define NUM_STATES 25
 #define ITERS 100
 
+
+typedef MVNormalEmissions Emission;
+typedef HMM<Emission> MyHMM;
+#define DIMS 6
+
 template<typename E>
-void initAlphabet(vector<E>& alpha, size_t num) {
-	for (size_t i=0; i<num; i++) {
-		alpha.push_back((uint64_t)i);
-	}
+void initAlphabet(vector<E>& alpha) {
+	alpha.push_back(arma::zeros<arma::vec>(DIMS));
 }
 
-typedef NormalEmissions Emission;
-typedef HMM<Emission> MyHMM;
-
 void converge(void) {
-	Emission ex(1.0, 0.4);
-	// vector<MyHMM::Emission> alphabet;
-	// initAlphabet(alphabet, 10);
+	Emission ex(DIMS);
+	vector<MyHMM::Emission> alphabet;
+	initAlphabet(alphabet);
 
 	MyHMM::Random r(time(NULL));
 	MyHMM hmm1, hmm2;
-	hmm1.initRandom(r, NUM_STATES);
-	hmm2.initRandom(r, NUM_STATES);
+	hmm1.initRandom(r, NUM_STATES, alphabet);
+	hmm2.initRandom(r, NUM_STATES, alphabet);
 
 	vector<MyHMM::Sequence> training_seqs;
 	for(size_t i=0; i<NUM_SEQ; i++) {
@@ -45,7 +45,7 @@ void converge(void) {
 	}
 
 	MyHMM hmmT;
-	hmmT.initRandom(r, NUM_STATES);
+	hmmT.initRandom(r, NUM_STATES, alphabet);
 	// hmmT.initUniform(NUM_STATES, ex);
 
 	printf("    Train          Test         Test (Hmm2)\n");

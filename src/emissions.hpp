@@ -129,6 +129,99 @@ namespace pslrhmm {
 		}
 	};
 
+	class MVNormalEmissions {
+	public:
+		typedef arma::vec Emission;
+
+	private:
+		typedef mlpack::distribution::GaussianDistribution Distribution;
+		Distribution dist;
+		double max_prob;
+		double scale_factor;
+
+		std::vector<Emission> observations;
+		std::vector<double> probabilities;
+
+		void compute_max_prob() {
+			// The max value of the normal PDF:
+			max_prob = dist.Probability(dist.Mean());
+			// Scale to get a rational volume
+			scale_factor = pow(2*M_PI, dist.Dimensionality() / -2.0) / max_prob;
+		}
+
+	public:
+		MVNormalEmissions(size_t dims) :
+			dist(dims) {
+			compute_max_prob();
+		}
+
+		MVNormalEmissions() :
+			dist() {
+			max_prob = -1.0;
+		}
+
+		template<typename Random>
+		void initRandom(Random& r, const std::vector<Emission>& alphabet) {
+			assert(alphabet.size() > 0 && "Needs an example!");
+			size_t dims = alphabet[0].n_cols;
+			arma::vec means(dims);
+			arma::mat cov = arma::eye<arma::mat>(dims, dims);
+
+			boost::uniform_01<double> u01;
+			boost::uniform_real<double> ur(-25, 25);
+			for (size_t d=0; d<dims; d++) {
+				means[d] = ur(r);
+				cov(d, d) = u01(r);
+			}
+			dist = Distribution(means, cov);
+			compute_max_prob();
+		}
+
+		template<typename Random>
+		Emission generateEmission(Random& r) const {
+			assert(max_prob != -1.0);
+			return dist.Random();
+		}
+
+		double likelihood(Emission a) const {
+			assert(max_prob != -1.0);
+			double l = dist.Probability(a);
+			assert(!std::isnan(l));
+			assert(!std::isinf(l));
+
+			assert(l >= 0.0);
+			assert(l <= (max_prob + 0.00001) );
+			return std::max(Epsilon, l * scale_factor);
+		}
+
+		void push(Emission a, double prob) {
+			observations.push_back(a);
+			probabilities.push_back(prob);
+		}
+
+		void computeDistribution() {
+			assert(probabilities.size() == observations.size());
+			assert(observations.size() > 0);
+			size_t dims = observations[0].n_cols;
+			arma::mat obs(dims, observations.size());
+			arma::vec probs(probabilities.size());
+
+			size_t sz = probabilities.size();
+			for (size_t i = 0; i < sz; i++) {
+				for (size_t d=0; d<dims; d++) {
+					obs(d, i) = observations[i][d];
+				}
+				probs[i] = probabilities[i];
+			}
+
+			dist.Estimate(obs, probs);
+			compute_max_prob();
+
+			observations.clear();
+			probabilities.clear();
+		}
+	};
+
 	// Uniform emissions don't make much sense, especially learning.
 	// Don't use them except for testing
 	class UniformEmissions {
