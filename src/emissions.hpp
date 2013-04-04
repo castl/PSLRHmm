@@ -52,6 +52,7 @@ namespace pslrhmm {
 		}
 	};
 
+	const static double Epsilon = 1e-9;
 	class NormalEmissions {
 	public:
 		typedef double Emission;
@@ -59,14 +60,26 @@ namespace pslrhmm {
 	private:
 		typedef mlpack::distribution::GaussianDistribution Distribution;
 		Distribution dist;
+		double max_prob;
+		double scale_factor;
 
 		std::vector<Emission> observations;
 		std::vector<double> probabilities;
 
+		void compute_max_prob() {
+			// The max value of the normal PDF:
+			max_prob = dist.Probability(dist.Mean());
+			// Scale to get a rational volume
+			scale_factor = pow(2*M_PI, dist.Dimensionality() / -2.0) / max_prob;
+		}
+
 	public:
-		NormalEmissions() : dist(1) { }
+		NormalEmissions() :
+			dist(arma::vec({1.0}), arma::mat(arma::vec({1.0}))) {
+		}
 		NormalEmissions(double mean, double stdev) :
-			dist(arma::vec({mean}), arma::mat(arma::vec({stdev}))) {
+			dist(arma::vec({mean}), arma::mat(arma::vec({stdev * stdev}))) {
+			compute_max_prob();
 		}
 
 		template<typename Random>
@@ -74,6 +87,7 @@ namespace pslrhmm {
 			boost::uniform_01<Emission> u01;
 			boost::uniform_real<Emission> ur(-25, 25);
 			dist = Distribution(arma::vec({ur(r)}), arma::mat(arma::vec({u01(r)})));
+			compute_max_prob();
 		}
 
 		template<typename Random>
@@ -82,7 +96,13 @@ namespace pslrhmm {
 		}
 
 		double likelihood(Emission a) const {
-			return dist.Probability(arma::vec({a}));
+			double l = dist.Probability(arma::vec({a}));
+			assert(!std::isnan(l));
+			assert(!std::isinf(l));
+
+			assert(l >= 0.0);
+			assert(l <= (max_prob + 0.00001) );
+			return std::max(Epsilon, l * scale_factor);
 		}
 
 		void push(Emission a, double prob) {
@@ -102,6 +122,7 @@ namespace pslrhmm {
 			}
 
 			dist.Estimate(obs, probs);
+			compute_max_prob();
 
 			observations.clear();
 			probabilities.clear();

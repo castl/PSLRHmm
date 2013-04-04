@@ -123,6 +123,7 @@ namespace pslrhmm {
 			// 	return 0.0;
 			return std::exp(l);
 		}
+		double calcSequenceLikelihoodNorm(const std::vector<Sequence>& s) const;
 
 		void forward_scaled(const Sequence&,
 					Matrix<double>& alpha, std::vector<double>& c) const;
