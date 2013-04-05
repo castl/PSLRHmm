@@ -50,6 +50,9 @@ namespace pslrhmm {
 		void computeDistribution() {
 			emissions_probs.normalize();
 		}
+
+		void print(FILE* st) const {
+		}
 	};
 
 	const static double Epsilon = 1e-9;
@@ -127,6 +130,9 @@ namespace pslrhmm {
 			observations.clear();
 			probabilities.clear();
 		}
+
+		void print(FILE* st) const {
+		}
 	};
 
 	class MVNormalEmissions {
@@ -163,7 +169,7 @@ namespace pslrhmm {
 		template<typename Random>
 		void initRandom(Random& r, const std::vector<Emission>& alphabet) {
 			assert(alphabet.size() > 0 && "Needs an example!");
-			size_t dims = alphabet[0].n_cols;
+			size_t dims = alphabet[0].n_elem;
 			arma::vec means(dims);
 			arma::mat cov = arma::eye<arma::mat>(dims, dims);
 
@@ -202,7 +208,7 @@ namespace pslrhmm {
 		void computeDistribution() {
 			assert(probabilities.size() == observations.size());
 			assert(observations.size() > 0);
-			size_t dims = observations[0].n_cols;
+			size_t dims = observations[0].n_elem;
 			arma::mat obs(dims, observations.size());
 			arma::vec probs(probabilities.size());
 
@@ -219,6 +225,26 @@ namespace pslrhmm {
 
 			observations.clear();
 			probabilities.clear();
+		}
+
+		void print(FILE* st) const {
+			arma::vec means = dist.Mean();
+			arma::mat cov = dist.Covariance();
+
+			fprintf(st, "      ");
+			for (size_t d=0; d<means.n_elem; d++) {
+				fprintf(st, "%0.2lf ", means[d]);
+			}
+			fprintf(st, "\n\n");
+
+			for (size_t d1=0; d1<cov.n_rows; d1++) {
+				fprintf(st, "      ");
+				for (size_t d=0; d<cov.n_cols; d++) {
+					fprintf(st, "%0.2lf ", cov(d1, d));
+				}
+				fprintf(st, "\n");
+			}
+			fprintf(st, "\n");
 		}
 	};
 
@@ -280,6 +306,9 @@ namespace pslrhmm {
 			seen.clear();
 
 			dist = Distribution(mean - 1.5*stdev, mean + 1.5*stdev);
+		}
+
+		void print(FILE* st) const {
 		}
 	};
 }

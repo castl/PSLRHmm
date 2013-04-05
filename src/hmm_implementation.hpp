@@ -371,4 +371,30 @@ namespace pslrhmm {
 			si->emissions_probs = bn;
 		}
 	}
+
+
+	template<typename E>
+	void HMM<E>::print(FILE* st) const {
+		const size_t num_states = states.size();
+
+		// First print transition matrix
+		fprintf(st, "     ");
+		for (size_t i=0; i<num_states; i++) {
+			fprintf(st, "%4lu ", i);
+		}
+		fprintf(st, "\n");
+
+		for (size_t i=0; i<num_states; i++) {
+			fprintf(st, "%2lu   ", i);
+			for (size_t j=0; j<num_states; j++) {
+				fprintf(st, "%0.2lf ", A(i, j));
+			}
+			fprintf(st, "\n");
+		}
+
+		for (size_t i=0; i<num_states; i++) {
+			fprintf(st, "  -- %4lu \n", i);
+			states[i]->emissions_probs.print(st);
+		}
+	}
 }

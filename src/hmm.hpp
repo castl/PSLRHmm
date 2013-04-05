@@ -141,6 +141,8 @@ namespace pslrhmm {
 			assert(i < states.size());
 			return *states[i];
 		}
+
+		void print(FILE* st = stdout) const;
 	};
 }
 

@@ -1,5 +1,6 @@
 LibPaths = [
-    '/proj/castl/experiments/android_malware/libs/mlpack-1.0.4/lib/'
+    '/proj/castl/experiments/android_malware/libs/mlpack-1.0.4/lib/',
+    '/proj/castl/experiments/android_malware/libs/lib',
 ]
 
 env = Environment(
