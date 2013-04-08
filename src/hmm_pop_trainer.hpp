@@ -38,6 +38,10 @@ namespace pslrhmm {
 			return *bestpair.hmm;
 		}
 
+		double bestScore() {
+			return bestpair.score;
+		}
+
 		void initRandom(typename HMM::Random& r, size_t states,
 				std::vector<Emission> alphabet = std::vector<Emission>()) {
 			BOOST_FOREACH(auto& hs, population) {
