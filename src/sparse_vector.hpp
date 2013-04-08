@@ -18,6 +18,16 @@ namespace pslrhmm {
 		typedef typename Map::iterator iterator;
 		typedef typename Map::const_iterator const_iterator;
 
+        void map(std::map<K, K> m) {
+            Map newVec;
+            BOOST_FOREACH(auto p, vec) {
+                auto fnd = m.find(p.first);
+                assert(fnd != m.end());
+                newVec[fnd->second] = p.second;
+            }
+            vec.swap(newVec);
+        }
+
 		void normalize() {
 			double total = 0.0;
 			BOOST_FOREACH(auto p, vec) {

@@ -23,16 +23,19 @@ namespace pslrhmm {
 
 		typedef typename HMM::Emission Emission;
 		std::vector< HmmScorePair > population;
+        HmmScorePair bestpair;
 
 	public:
 		PopulationTrainer(size_t population_size) {
 			for (size_t i=0; i<population_size; i++) {
 				population.push_back(HmmScorePair());
 			}
+            bestpair = population.front();
+            bestpair.hmm = bestpair.hmm->clone();
 		}
 
 		HMM& best() {
-			return *population.back().hmm;
+			return *bestpair.hmm;
 		}
 
 		void initRandom(typename HMM::Random& r, size_t states,
@@ -64,6 +67,12 @@ namespace pslrhmm {
 			}
 
 			std::stable_sort(population.begin(), population.end());
+
+            if (population.back().score > bestpair.score) {
+                delete bestpair.hmm;
+                bestpair = population.back();
+                bestpair.hmm = bestpair.hmm->clone();
+            }
 		}
 	};
 }

@@ -24,7 +24,16 @@ namespace pslrhmm {
 
 		StateTempl(HMM<E>& hmm) : owner(hmm) { }
 
+        StateTempl(HMM<E>& hmm, const StateTempl* orig) : owner(hmm) {
+            this->emissions_probs = orig->emissions_probs;
+            this->transition_probs = orig->transition_probs;
+        }
+
 	public:
+        void convertPointers(std::map<const StateTempl*, const StateTempl*> m) {
+            transition_probs.map(m);
+        }
+
 		template<typename Random>
 		typename E::Emission generateEmission(Random& r) const {
 			return emissions_probs.generateEmission(r);
@@ -89,6 +98,25 @@ namespace pslrhmm {
 
 	public:
 		HMM() { }
+
+        HMM(const HMM* orig) {
+            std::map<const State*, const State*> m;
+            BOOST_FOREACH(State* s, orig->states) {
+                auto n = new State(*this, s);
+                this->states.push_back(n);
+                this->init_prob[n] = orig->init_prob[s];
+                m[s] = n;
+            }
+
+            BOOST_FOREACH(State* s, this->states) {
+                s->convertPointers(m);
+            }
+        }
+
+        HMM* clone() const {
+            HMM* n = new HMM(this);
+            return n;
+        }
 
 		void initRandom(Random& r, size_t states,
 				std::vector<Emission> alphabet = std::vector<Emission>());

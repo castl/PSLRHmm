@@ -4,9 +4,9 @@
 using namespace pslrhmm;
 using namespace std;
 
-#define NUM_SEQ 1000
-#define NUM_STATES 4
-#define ITERS 50 
+#define NUM_SEQ 200
+#define NUM_STATES 3
+#define ITERS 10 
 
 
 typedef MVNormalEmissions Emission;
@@ -33,7 +33,7 @@ void converge(void) {
 	vector<MyHMM::Sequence> training_seqs;
 	for(size_t i=0; i<NUM_SEQ; i++) {
 		MyHMM::Sequence s1;
-		hmm1.generateSequence(r, s1, 400);
+		hmm1.generateSequence(r, s1, 800);
 		training_seqs.push_back(s1);
 	}
 
@@ -41,24 +41,27 @@ void converge(void) {
 	vector<MyHMM::Sequence> testing_seqs2;
 	for(size_t i=0; i<NUM_SEQ; i++) {
 		MyHMM::Sequence s1, s2;
-		hmm1.generateSequence(r, s1, 400);
-		hmm2.generateSequence(r, s2, 400);
+		hmm1.generateSequence(r, s1, 800);
+		hmm2.generateSequence(r, s2, 800);
 		testing_seqs1.push_back(s1);
 		testing_seqs2.push_back(s2);
 	}
 
 	// MyHMM hmmT;
-	PopulationTrainer<MyHMM> pt(250);
+	PopulationTrainer<MyHMM> pt(25);
 	pt.initRandom(r, NUM_STATES, alphabet);
 	// hmmT.initUniform(NUM_STATES, ex);
 
-	printf("    Train          Test         Test (Hmm2)\n");
+	printf("    Train          Test         Test (Hmm2)     Train(hmm1)\n");
 	for (size_t i=0; i<ITERS; i++) {
 		MyHMM& hmmT = pt.best();
-		printf("%lu: %le %le %le\n", i,
+        printf("\n=== HMMT Iter: %lu\n", i);
+        hmmT.print();
+		printf("%lu: %le %le %le %le\n", i,
 			hmmT.calcSequenceLikelihoodNorm(training_seqs),
 			hmmT.calcSequenceLikelihoodNorm(testing_seqs1),
-			hmmT.calcSequenceLikelihoodNorm(testing_seqs2));
+			hmmT.calcSequenceLikelihoodNorm(testing_seqs2),
+            hmm1.calcSequenceLikelihoodNorm(training_seqs));
 
 		pt.baum_welch(training_seqs);
 	}
