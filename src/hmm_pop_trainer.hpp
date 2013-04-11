@@ -62,8 +62,6 @@ namespace pslrhmm {
 		void baum_welch(const std::vector< typename HMM::Sequence >& sequences) {
 			size_t pop_size = population.size();
 
-			#pragma omp parallel for \
-				shared(sequences)
 			for (size_t i=0; i<pop_size; i++) {
 				auto& hs = population[i];
 				hs.hmm->baum_welch(sequences);
