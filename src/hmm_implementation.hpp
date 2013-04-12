@@ -301,7 +301,8 @@ namespace pslrhmm {
 		vector< E > bhat(num_states);
 
 		#pragma omp parallel for \
-			shared(sequences, ahat_numerator, ahat_denominator, bhat)
+			shared(sequences, ahat_numerator, ahat_denominator, bhat) \
+			schedule(dynamic)
 		for (size_t l=0; l<sequences.size(); l++) {
 			const Sequence& seq = sequences[l];
 			const size_t T = seq.size();
