@@ -34,6 +34,14 @@ namespace pslrhmm {
             transition_probs.map(m);
         }
 
+        void setEmissionDistribution(E e) {
+            this->emissions_probs = e;
+        }
+
+        E getEmissionDistribution() {
+        	return this->emissions_probs;
+        }
+
 		template<typename Random>
 		typename E::Emission generateEmission(Random& r) const {
 			return emissions_probs.generateEmission(r);
@@ -48,6 +56,7 @@ namespace pslrhmm {
 	template<typename E = DiscreteEmissions<uint64_t> >
 	class HMM {
 	public:
+		typedef E Distribution;
 		typedef typename E::Emission Emission;
 		typedef std::vector<Emission> Sequence;
 		typedef boost::mt19937 Random;
@@ -122,6 +131,17 @@ namespace pslrhmm {
 				std::vector<Emission> alphabet = std::vector<Emission>());
 		void initUniform(size_t states, std::vector<Emission> example);
 		void initUniform(size_t states, E example);
+
+        void getTransitionMatrix(arma::mat& tm) {
+            size_t hmm_states = this->states.size();
+            tm.resize(hmm_states, hmm_states);
+
+            for (size_t i=0; i<hmm_states; i++) {
+                for (size_t j=0; j<hmm_states; j++) {
+                    tm(i, j) = A(i, j);
+                }
+            }
+        }
 
 		const State* generateInitialState(Random& r) const {
 			return init_prob.select(r);

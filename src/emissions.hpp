@@ -138,10 +138,11 @@ namespace pslrhmm {
 	class MVNormalEmissions {
 	public:
 		typedef arma::vec Emission;
+		typedef mlpack::distribution::GaussianDistribution Distribution;
 
 	private:
-		typedef mlpack::distribution::GaussianDistribution Distribution;
 		Distribution dist;
+        bool ismutable;
 		double max_prob;
 		double scale_factor;
 
@@ -151,18 +152,33 @@ namespace pslrhmm {
 		void compute_max_prob() {
 			// The max value of the normal PDF:
 			max_prob = dist.Probability(dist.Mean());
+			assert(!std::isnan(max_prob));
 			// Scale to get a rational volume
 			scale_factor = pow(2*M_PI, dist.Dimensionality() / -2.0) / max_prob;
 		}
 
 	public:
-		MVNormalEmissions(size_t dims) :
-			dist(dims) {
+		MVNormalEmissions(const MVNormalEmissions& other) {
+			this->dist = other.dist;
+			this->ismutable = other.ismutable;
 			compute_max_prob();
 		}
 
+		MVNormalEmissions(size_t dims) :
+			dist(dims),
+            ismutable(true) {
+			compute_max_prob();
+		}
+
+        MVNormalEmissions(Distribution dist, bool ismutable = true) :
+            dist(dist),
+            ismutable(ismutable) {
+            compute_max_prob();
+        }
+
 		MVNormalEmissions() :
-			dist() {
+			dist(),
+            ismutable(true) {
 			max_prob = -1.0;
 		}
 
@@ -192,7 +208,9 @@ namespace pslrhmm {
 		double likelihood(Emission a) const {
 			assert(max_prob != -1.0);
 			double l = dist.Probability(a);
-			assert(!std::isnan(l));
+			if (std::isnan(l)) {
+				l = max_prob * 1e-10;
+			} 
 			assert(!std::isinf(l));
 
 			assert(l >= 0.0);
@@ -201,11 +219,15 @@ namespace pslrhmm {
 		}
 
 		void push(Emission a, double prob) {
+            if (!ismutable)
+                return;
 			observations.push_back(a);
 			probabilities.push_back(prob);
 		}
 
 		void computeDistribution() {
+            if (!ismutable)
+                return;
 			assert(probabilities.size() == observations.size());
 			assert(observations.size() > 0);
 			size_t dims = observations[0].n_elem;
@@ -231,6 +253,9 @@ namespace pslrhmm {
 			arma::vec means = dist.Mean();
 			arma::mat cov = dist.Covariance();
 
+			if (!ismutable) {
+				fprintf(st, "    immutable\n");
+			}
 			fprintf(st, "      ");
 			for (size_t d=0; d<means.n_elem; d++) {
 				fprintf(st, "%0.2lf ", means[d]);

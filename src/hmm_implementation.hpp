@@ -299,6 +299,9 @@ namespace pslrhmm {
 
 		// Indexed by state number
 		vector< E > bhat(num_states);
+		for (size_t i=0; i<num_states; i++) {
+			bhat[i] = states[i]->getEmissionDistribution();
+		}
 
 		#pragma omp parallel for \
 			shared(sequences, ahat_numerator, ahat_denominator, bhat) \
